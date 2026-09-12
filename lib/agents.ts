@@ -13,7 +13,7 @@ import type { Grade } from "./vitals";
 import { analyze } from "./vitals";
 import { computeMetrics } from "./portfolio";
 import type { AuditEntry, Job, Portfolio, Specialist } from "./types";
-import { LIVE_EXECUTION } from "./config";
+import { anchorAction, liveReady } from "./chain";
 
 // ── Specialist registry ───────────────────────────────────────────────────────
 // Each specialist has an on-chain identity (ERC-8004) on X Layer. Addresses are
@@ -24,7 +24,7 @@ export const SPECIALISTS: Record<string, Specialist> = {
     id: "rebalancer-agent",
     name: "Rebalancer",
     role: "asp",
-    address: "0xR3ba1a0000000000000000000000000000000001",
+    address: "0x98Dd35fe3ae7C4c3Ba0E21bc830FeA10A5B80532",
     rating: 4.8,
     jobsDone: 1240,
     pricePerTaskUSDC: 0.75,
@@ -35,7 +35,7 @@ export const SPECIALISTS: Record<string, Specialist> = {
     id: "hedge-agent",
     name: "Hedge Desk",
     role: "asp",
-    address: "0xHed9e00000000000000000000000000000000002",
+    address: "0x5B0e8E5f96f82D7D1bbFdB010765c03bC17b546B",
     rating: 4.6,
     jobsDone: 803,
     pricePerTaskUSDC: 1.2,
@@ -46,13 +46,20 @@ export const SPECIALISTS: Record<string, Specialist> = {
     id: "yield-agent",
     name: "Yield Router",
     role: "asp",
-    address: "0xY1e1d000000000000000000000000000000003",
+    address: "0xB5065628CcF19D595F409Ba4933AD58F60712a54",
     rating: 4.9,
     jobsDone: 2110,
     pricePerTaskUSDC: 0.4,
     skill: "Routes idle stablecoins into vetted yield vaults",
     registered: false,
   },
+};
+
+// The coordinator's own on-chain identity (the agent that hires the others).
+export const COORDINATOR = {
+  id: "coordinator",
+  name: "Coordinator",
+  address: "0x746BF3A685fcA27b458f1a0C5B2D2bc029f245c3",
 };
 
 // ── Planning ────────────────────────────────────────────────────────────────
@@ -100,9 +107,11 @@ function sizeOf(recId: string, p: Portfolio, total: number): number {
 // ── Settlement ────────────────────────────────────────────────────────────────
 // Run one job end to end: hire (A2A) → pay (x402) → execute (X Layer) → settle.
 // Returns the audit entries plus the portfolio mutated to reflect the executed fix.
-export function settleJob(job: Job, portfolio: Portfolio): { entries: AuditEntry[]; portfolio: Portfolio } {
+// In live mode the pay + execute steps are anchored as real X Layer transactions,
+// so their tx hashes resolve on OKLink. In sim mode they carry flagged sim refs.
+export async function settleJob(job: Job, portfolio: Portfolio): Promise<{ entries: AuditEntry[]; portfolio: Portfolio }> {
   const entries: AuditEntry[] = [];
-  const live = LIVE_EXECUTION;
+  const live = liveReady();
   const push = (kind: AuditEntry["kind"], text: string, extra: Partial<AuditEntry> = {}) =>
     entries.push({ id: randomUUID(), ts: Date.now(), kind, actor: "coordinator", text, live, jobId: job.id, ...extra });
 
@@ -110,16 +119,18 @@ export function settleJob(job: Job, portfolio: Portfolio): { entries: AuditEntry
   push("hire", `Hired ${job.specialist.name} (${job.specialist.id}) over A2A — rated ${job.specialist.rating}★, ${job.specialist.jobsDone} jobs done`, {
     actor: "coordinator",
   });
-  // 2. PAY over x402
+  // 2. PAY over x402 — anchored on X Layer when live
+  const payHash = (await anchorAction(`x402 pay ${job.specialist.id} ${job.feeUSDC}USDC`)) || ref("pay", job.id);
   push("pay", `Paid ${job.specialist.name} ${job.feeUSDC} USDC via x402`, {
     amountUSDC: job.feeUSDC,
-    txHash: ref("pay", job.id),
+    txHash: payHash,
   });
-  // 3. EXECUTE on X Layer
+  // 3. EXECUTE on X Layer — anchored on X Layer when live
+  const execHash = (await anchorAction(`exec ${job.specialist.id} ${job.action}`)) || ref("exec", job.id);
   push("execute", `${job.specialist.name}: ${job.action} — ${fmtUSD(job.estValueUSDC)} on X Layer`, {
     actor: job.specialist.id,
     amountUSDC: job.estValueUSDC,
-    txHash: ref("exec", job.id),
+    txHash: execHash,
   });
   // 4. SETTLE
   const next = applyFix(job, portfolio);

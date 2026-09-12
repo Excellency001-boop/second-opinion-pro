@@ -43,7 +43,27 @@ export default function Desk() {
   const [profile, setProfile] = useState<Profile>("balanced");
   const [mode, setMode] = useState<"danger" | "healthy" | "live">("danger");
   const [address, setAddress] = useState("");
+  const [chain, setChain] = useState<{ block: string; chainId: number; live: boolean; ok: boolean } | null>(null);
   const killedRef = useRef(false);
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const r = await fetch("/api/chain", { cache: "no-store" });
+        const j = (await r.json()) as { ok: boolean; live: boolean; status: { ok: boolean; chainId: number; block: string } };
+        if (alive && j.ok) setChain({ block: j.status.block, chainId: j.status.chainId, live: j.live, ok: j.status.ok });
+      } catch {
+        /* header just shows the static badge if this fails */
+      }
+    };
+    load();
+    const t = setInterval(load, 12000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, []);
 
   const scan = useCallback(async () => {
     setBusy(true);
@@ -98,7 +118,7 @@ export default function Desk() {
   return (
     <main className="min-h-screen deck-grid">
       <div className="mx-auto max-w-6xl px-5 py-6">
-        <Header state={state} />
+        <Header state={state} chain={chain} />
         <Controls
           mode={mode}
           setMode={setMode}
@@ -140,7 +160,8 @@ function sleep(ms: number) {
 }
 
 // ── Header ─────────────────────────────────────────────────────────────────────
-function Header({ state }: { state: DeskState | null }) {
+function Header({ state, chain }: { state: DeskState | null; chain: { block: string; chainId: number; live: boolean; ok: boolean } | null }) {
+  const isLive = chain?.live ?? state?.live ?? false;
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-deck-600 pb-4">
       <div className="flex items-center gap-3">
@@ -155,8 +176,17 @@ function Header({ state }: { state: DeskState | null }) {
         </div>
       </div>
       <div className="flex items-center gap-2 text-[11px]">
-        <Badge tone={state?.live ? "ok" : "warn"}>{state?.live ? "LIVE EXECUTION" : "SIMULATION"}</Badge>
-        <Badge tone="scan">X LAYER · 196</Badge>
+        <Badge tone={isLive ? "ok" : "warn"}>{isLive ? "LIVE EXECUTION" : "SIMULATION"}</Badge>
+        <Badge tone="scan">
+          {chain?.ok ? (
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-1.5 w-1.5 animate-pulse2 rounded-full bg-signal-ok" />
+              X LAYER · {chain.chainId} · #{chain.block}
+            </span>
+          ) : (
+            "X LAYER · 196"
+          )}
+        </Badge>
         <Badge tone="muted">HOSTED · PC-FREE</Badge>
       </div>
     </header>
@@ -524,7 +554,15 @@ function JobCard({ job }: { job: Job }) {
           <span className="grid h-6 w-6 place-items-center rounded bg-deck-700 font-mono text-[11px]" style={{ color: TONE_HEX[tone] }}>
             {job.specialist.name[0]}
           </span>
-          <span className="text-[12px] font-medium text-ink-100">{job.specialist.name}</span>
+          <a
+            href={`${EXPLORER}/address/${job.specialist.address}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[12px] font-medium text-ink-100 hover:text-signal-scan"
+            title={`ERC-8004 identity on X Layer · ${job.specialist.address}`}
+          >
+            {job.specialist.name}
+          </a>
           <span className="font-mono text-[10px] text-ink-500">{job.specialist.rating}★</span>
           {job.synergy && <span className="rounded bg-[#b98bff]/10 px-1.5 py-0.5 text-[10px] text-[#b98bff]">synergy</span>}
         </div>

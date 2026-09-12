@@ -4,9 +4,9 @@
 
 import { randomUUID } from "crypto";
 import { kvGet, kvSet } from "./store";
-import { GUARDRAILS, LIVE_EXECUTION } from "./config";
+import { GUARDRAILS } from "./config";
 import { getDemoPortfolio, computeMetrics } from "./portfolio";
-import { readLivePortfolio } from "./chain";
+import { readLivePortfolio, liveReady } from "./chain";
 import { analyze, type Profile } from "./vitals";
 import { planFixes, settleJob, regrade, SPECIALISTS } from "./agents";
 import type { AuditEntry, DeskState, Guardrails, Job } from "./types";
@@ -38,7 +38,7 @@ export async function tickAllActive(): Promise<{ scanned: number; advanced: numb
 }
 
 function audit(state: DeskState, kind: AuditEntry["kind"], text: string, actor = "coordinator", extra: Partial<AuditEntry> = {}) {
-  state.audit.unshift({ id: randomUUID(), ts: Date.now(), kind, actor, text, live: LIVE_EXECUTION, ...extra });
+  state.audit.unshift({ id: randomUUID(), ts: Date.now(), kind, actor, text, live: liveReady(), ...extra });
 }
 
 export async function getState(id: string): Promise<DeskState | null> {
@@ -96,7 +96,7 @@ export async function scanAndGrade(opts: {
     plan,
     jobs: [],
     audit: [],
-    live: LIVE_EXECUTION,
+    live: liveReady(),
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
@@ -182,7 +182,7 @@ export async function tick(id: string): Promise<DeskState | null> {
 
   // Settle the job: hire → pay → execute → settle, and mutate the book.
   next.status = "executing";
-  const { entries, portfolio } = settleJob(next, state.portfolio!);
+  const { entries, portfolio } = await settleJob(next, state.portfolio!);
   for (const e of entries) state.audit.unshift(e);
   state.portfolio = portfolio;
   next.status = "settled";

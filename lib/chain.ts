@@ -1,5 +1,6 @@
-import { createPublicClient, http, formatUnits, type Address } from "viem";
-import { XLAYER } from "./config";
+import { createPublicClient, createWalletClient, http, formatUnits, toHex, type Address } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { XLAYER, LIVE_EXECUTION } from "./config";
 import type { Holding, Portfolio } from "./types";
 
 // X Layer chain definition for viem.
@@ -76,4 +77,58 @@ export function txExplorerUrl(txHash: string): string {
 }
 export function addressExplorerUrl(addr: string): string {
   return `${XLAYER.explorer}/address/${addr}`;
+}
+
+// ── Live chain status ─────────────────────────────────────────────────────────
+// Proves the app is really talking to X Layer. No key needed — reads are free.
+export async function chainStatus(): Promise<{ ok: boolean; chainId: number; block: string; rpc: string }> {
+  try {
+    const c = publicClient();
+    const [id, block] = await Promise.all([c.getChainId(), c.getBlockNumber()]);
+    return { ok: true, chainId: id, block: block.toString(), rpc: XLAYER.rpcUrl };
+  } catch {
+    return { ok: false, chainId: XLAYER.chainId, block: "—", rpc: XLAYER.rpcUrl };
+  }
+}
+
+// ── The agent wallet ──────────────────────────────────────────────────────────
+// Present only in live mode with a funded key. Never touches the user's laptop —
+// the key lives as a Vercel env var on the hosted backend. Handling any private
+// key stays server-side; it is never returned to the client.
+export function agentAccount() {
+  const pk = process.env.AGENT_PRIVATE_KEY;
+  if (!pk) return null;
+  const key = (pk.startsWith("0x") ? pk : `0x${pk}`) as `0x${string}`;
+  try {
+    return privateKeyToAccount(key);
+  } catch {
+    return null;
+  }
+}
+
+export function liveReady(): boolean {
+  return LIVE_EXECUTION && agentAccount() !== null;
+}
+
+// Anchor one agent action on X Layer as a real, verifiable transaction. This is
+// the honest minimum: a 0-value tx from the agent wallet to itself carrying the
+// action label in calldata, so every step in the audit trail has a real tx hash
+// an OKLink viewer can open. Returns null when not in live mode (caller then uses
+// a clearly-flagged simulation reference instead).
+export async function anchorAction(label: string): Promise<string | null> {
+  if (!liveReady()) return null;
+  const account = agentAccount();
+  if (!account) return null;
+  try {
+    const wallet = createWalletClient({ account, chain: xlayer, transport: http(XLAYER.rpcUrl) });
+    const hash = await wallet.sendTransaction({
+      to: account.address,
+      value: 0n,
+      data: toHex(label.slice(0, 220)),
+    });
+    return hash;
+  } catch {
+    // Never break a run over a chain hiccup — fall back to a flagged sim reference.
+    return null;
+  }
 }
