@@ -1,0 +1,23 @@
+# The always-on heartbeat, for free, with no PC.
+# Vercel Cron on the free plan can be throttled to roughly daily. This GitHub
+# Action pings the desk's tick endpoint every 5 minutes so any session with
+# pending work keeps advancing on its own. Set two repo secrets:
+#   DESK_URL     = https://your-app.vercel.app
+#   CRON_SECRET  = the same value you set in Vercel env
+# GitHub-hosted schedules are best-effort and may lag a few minutes under load,
+# which is fine for a background risk desk.
+name: desk-heartbeat
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the desk
+        run: |
+          curl -s -m 30 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.DESK_URL }}/api/tick" || echo "heartbeat ping failed (will retry next tick)"
