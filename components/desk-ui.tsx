@@ -163,45 +163,27 @@ function sleep(ms: number) {
 function Header({ state, chain }: { state: DeskState | null; chain: { block: string; chainId: number; live: boolean; ok: boolean } | null }) {
   const isLive = chain?.live ?? state?.live ?? false;
   return (
-    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-deck-600 pb-4">
-      <div className="flex items-center gap-3">
-        <div className="grid h-9 w-9 place-items-center rounded-md border border-deck-600 bg-deck-800 shadow-panel">
-          <span className="animate-pulse2 text-signal-scan">◉</span>
+    <header className="flex items-center justify-between gap-4 border-b border-deck-600 pb-5">
+      <div className="flex items-center gap-2.5">
+        <div className="grid h-8 w-8 place-items-center rounded-md border border-deck-600 bg-deck-800">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-signal-scan">
+            <path d="M2 12h3.5l2.5-6 4 12 3-9 1.8 3H22" />
+          </svg>
         </div>
-        <div>
-          <h1 className="text-[15px] font-semibold tracking-tight text-ink-100">
-            Second Opinion <span className="text-signal-scan">Pro</span>
-          </h1>
-          <p className="text-[11px] text-ink-500">The risk desk that acts. You hold the kill switch.</p>
+        <div className="leading-tight">
+          <h1 className="text-[14px] font-semibold tracking-tight text-ink-100">Second Opinion</h1>
+          <p className="text-[10.5px] text-ink-500">Autonomous risk desk</p>
         </div>
       </div>
-      <div className="flex items-center gap-2 text-[11px]">
-        <Badge tone={isLive ? "ok" : "warn"}>{isLive ? "LIVE EXECUTION" : "SIMULATION"}</Badge>
-        <Badge tone="scan">
-          {chain?.ok ? (
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 animate-pulse2 rounded-full bg-signal-ok" />
-              X LAYER · {chain.chainId} · #{chain.block}
-            </span>
-          ) : (
-            "X LAYER · 196"
-          )}
-        </Badge>
-        <Badge tone="muted">HOSTED · PC-FREE</Badge>
+      <div className="flex items-center gap-1.5 font-mono text-[11px]">
+        <span className={`inline-block h-1.5 w-1.5 rounded-full ${chain?.ok ? "bg-signal-ok" : "bg-ink-500"}`} />
+        <span className="text-ink-300">X Layer</span>
+        {chain?.ok && <span className="tnum text-ink-500">#{Number(chain.block).toLocaleString("en-US")}</span>}
+        <span className="text-ink-500">·</span>
+        <span className={isLive ? "text-signal-ok" : "text-ink-500"}>{isLive ? "live" : "sim"}</span>
       </div>
     </header>
   );
-}
-
-function Badge({ children, tone }: { children: React.ReactNode; tone: "ok" | "warn" | "crit" | "scan" | "muted" }) {
-  const map: Record<string, string> = {
-    ok: "border-signal-ok/40 text-signal-ok",
-    warn: "border-signal-warn/40 text-signal-warn",
-    crit: "border-signal-crit/40 text-signal-crit",
-    scan: "border-signal-scan/40 text-signal-scan",
-    muted: "border-deck-600 text-ink-500",
-  };
-  return <span className={`rounded border px-2 py-0.5 font-mono tracking-wide ${map[tone]}`}>{children}</span>;
 }
 
 // ── Controls ────────────────────────────────────────────────────────────────
@@ -652,8 +634,8 @@ function PanelTitle({ children }: { children: React.ReactNode }) {
 function Footer({ state }: { state: DeskState | null }) {
   return (
     <footer className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-deck-600 pt-4 text-[11px] text-ink-500">
-      <span>Second Opinion Pro · OKX Dev Day 2026 · built on X Layer</span>
-      <span className="font-mono">{state ? `session ${state.sessionId.slice(0, 8)}` : "no session"}</span>
+      <span>Second Opinion · built on X Layer</span>
+      <span className="font-mono">{state ? state.sessionId.slice(0, 8) : ""}</span>
     </footer>
   );
 }
