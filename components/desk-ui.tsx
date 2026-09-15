@@ -44,6 +44,7 @@ export default function Desk() {
   const [mode, setMode] = useState<"danger" | "healthy" | "live">("danger");
   const [address, setAddress] = useState("");
   const [chain, setChain] = useState<{ block: string; chainId: number; live: boolean; ok: boolean } | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const killedRef = useRef(false);
 
   useEffect(() => {
@@ -67,14 +68,16 @@ export default function Desk() {
 
   const scan = useCallback(async () => {
     setBusy(true);
+    setError(null);
     killedRef.current = false;
-    const res = await post<{ ok: boolean; state: DeskState }>("/api/scan", {
+    const res = await post<{ ok: boolean; state: DeskState; error?: string }>("/api/scan", {
       source: mode === "live" ? "live" : "demo",
       demoKind: mode === "healthy" ? "healthy" : "danger",
       address: address.trim(),
       profile,
     });
     if (res.ok) setState(res.state);
+    else setError(res.error || "Could not scan. Try again.");
     setBusy(false);
   }, [mode, address, profile]);
 
@@ -130,6 +133,13 @@ export default function Desk() {
           busy={busy}
           hasState={!!state}
         />
+
+        {error && (
+          <div className="mt-4 flex items-start gap-2 rounded-lg border border-signal-crit/40 bg-signal-crit/5 px-4 py-3 text-[13px] text-signal-crit">
+            <span className="mt-0.5">✕</span>
+            <span>{error}</span>
+          </div>
+        )}
 
         {!state ? (
           <EmptyState />
@@ -476,7 +486,8 @@ function OversightPanel({
             ✕ KILL SWITCH — stop everything now
           </button>
         )}
-        {done && <div className="rounded bg-signal-ok/10 py-2 text-center text-[13px] font-medium text-signal-ok">Run complete. You were in control the whole time.</div>}
+        {done && state.jobs.length > 0 && <div className="rounded bg-signal-ok/10 py-2 text-center text-[13px] font-medium text-signal-ok">Run complete. You were in control the whole time.</div>}
+        {done && state.jobs.length === 0 && <div className="rounded bg-signal-ok/10 py-2 text-center text-[13px] text-signal-ok">Clean book — nothing to do today.</div>}
         {killed && <div className="rounded bg-signal-crit/10 py-2 text-center text-[13px] font-medium text-signal-crit">Stopped by you. Book untouched from here.</div>}
         {awaiting && state.plan.length === 0 && <div className="rounded bg-signal-ok/10 py-2 text-center text-[13px] text-signal-ok">Clean book — nothing to do.</div>}
       </div>

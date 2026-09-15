@@ -181,7 +181,9 @@ export function recommend(
     out.push({ id: "stop", tool: "hedge-agent", why: `${perpInst} leverage is thin on cushion`, action: `Set a protective stop on ${perpInst}`, command: `place protective stop @ trigger` });
   if (bad("funding"))
     out.push({ id: "funding", tool: "hedge-agent", why: `paying funding on ${perpInst}`, action: `Reduce or flip the crowded perp`, command: `close/flip perp position` });
-  if (typeof idlePct === "number" && idlePct >= 5)
+  // Only flag idle cash when it is genuinely excessive. A normal 10-18% buffer is
+  // healthy, not lazy, and should not read as a "fix" on an otherwise clean book.
+  if (typeof idlePct === "number" && idlePct >= 20)
     out.push({ id: "earn", tool: "yield-agent", synergy: true, why: `${Math.round(idlePct)}% of the book is idle stablecoins earning 0%`, action: `Move idle USDC into a vetted yield vault`, command: `deposit idle USDC -> yield vault` });
   return out;
 }

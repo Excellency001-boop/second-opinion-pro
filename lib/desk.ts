@@ -3,6 +3,7 @@
 // UI and the Vercel Cron both drive: scan → plan → approve → tick → settle.
 
 import { randomUUID } from "crypto";
+import { isAddress } from "viem";
 import { kvGet, kvSet } from "./store";
 import { GUARDRAILS } from "./config";
 import { getDemoPortfolio, computeMetrics } from "./portfolio";
@@ -70,10 +71,20 @@ export async function scanAndGrade(opts: {
   const sessionId = opts.sessionId || randomUUID();
   const profile = opts.profile || "balanced";
 
-  const portfolio =
-    opts.source === "live" && opts.address
-      ? await readLivePortfolio(opts.address)
-      : getDemoPortfolio(opts.demoKind || "danger");
+  let portfolio;
+  if (opts.source === "live") {
+    // Live mode must have a real address, and must find real assets. No silent
+    // fallback to a demo book, and no grading an empty $0 book.
+    if (!opts.address || !isAddress(opts.address.trim())) {
+      throw new Error("Enter a valid X Layer address (0x…) to scan a live book.");
+    }
+    portfolio = await readLivePortfolio(opts.address.trim());
+    if (portfolio.holdings.length === 0 || portfolio.totalUSD <= 0) {
+      throw new Error("No assets found for this address on X Layer. Try a demo book, or an address that holds OKB or tokens.");
+    }
+  } else {
+    portfolio = getDemoPortfolio(opts.demoKind || "danger");
+  }
 
   const metrics = computeMetrics(portfolio);
   const grade = analyze(metrics, {

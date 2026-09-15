@@ -75,12 +75,16 @@ export const DEMO_DANGER: Portfolio = (() => {
 })();
 
 export const DEMO_HEALTHY: Portfolio = (() => {
+  // Deliberately balanced: no single position over ~22%, a real cash buffer, plenty
+  // of uncorrelated tokenized-stock (RWA) weight, no leverage. Grades clean under a
+  // balanced profile so the "nothing to do today" path is demoable.
   const holdings: Holding[] = [
-    { symbol: "WOKB", name: "Wrapped OKB", amount: 120, priceUSD: 44, valueUSD: 5_280, kind: "crypto" },
-    { symbol: "ETH", name: "Ether", amount: 2.1, priceUSD: 2_450, valueUSD: 5_145, kind: "crypto" },
-    { symbol: "USDC", name: "USD Coin", amount: 4_800, priceUSD: 1, valueUSD: 4_800, kind: "stablecoin" },
-    { symbol: "AAPLx", name: "Apple (tokenized stock)", amount: 14, priceUSD: 227, valueUSD: 3_178, kind: "tokenized-stock" },
-    { symbol: "SPYx", name: "S&P 500 ETF (tokenized)", amount: 6, priceUSD: 560, valueUSD: 3_360, kind: "tokenized-stock" },
+    { symbol: "SPYx", name: "S&P 500 ETF (tokenized)", amount: 5.36, priceUSD: 560, valueUSD: 3_000, kind: "tokenized-stock" },
+    { symbol: "AAPLx", name: "Apple (tokenized stock)", amount: 12.33, priceUSD: 227, valueUSD: 2_800, kind: "tokenized-stock" },
+    { symbol: "GLDx", name: "Gold (tokenized)", amount: 11.2, priceUSD: 214, valueUSD: 2_400, kind: "tokenized-stock" },
+    { symbol: "USDC", name: "USD Coin", amount: 2_400, priceUSD: 1, valueUSD: 2_400, kind: "stablecoin" },
+    { symbol: "WOKB", name: "Wrapped OKB", amount: 43.2, priceUSD: 44, valueUSD: 1_900, kind: "crypto" },
+    { symbol: "ETH", name: "Ether", amount: 0.776, priceUSD: 2_450, valueUSD: 1_900, kind: "crypto" },
   ];
   const totalUSD = holdings.reduce((s, h) => s + h.valueUSD, 0);
   return {
@@ -88,8 +92,8 @@ export const DEMO_HEALTHY: Portfolio = (() => {
     address: "demo:healthy",
     totalUSD,
     holdings,
-    topSymbol: "WOKB",
-    idleStablePct: (4_800 / totalUSD) * 100,
+    topSymbol: "SPYx",
+    idleStablePct: (2_400 / totalUSD) * 100,
   };
 })();
 
