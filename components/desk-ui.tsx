@@ -10,13 +10,13 @@ const EXPLORER = "https://www.oklink.com/xlayer";
 // ── vital display config ──────────────────────────────────────────────────────
 type VitalKey = "leverage" | "concentration" | "buffer" | "diversification" | "correlation" | "funding" | "drawdown";
 const VITAL_META: Record<VitalKey, { label: string; fmt: (v: number) => string; good: number; bad: number; lowerBetter: boolean; hint: string }> = {
-  leverage: { label: "Effective leverage", fmt: (v) => v.toFixed(1) + "×", good: 2, bad: 5, lowerBetter: true, hint: "exposure vs equity" },
-  concentration: { label: "Top-holding weight", fmt: (v) => Math.round(v * 100) + "%", good: 0.25, bad: 0.6, lowerBetter: true, hint: "one-coin risk" },
-  buffer: { label: "Stablecoin buffer", fmt: (v) => Math.round(v * 100) + "%", good: 0.1, bad: 0, lowerBetter: false, hint: "dry powder" },
-  diversification: { label: "Diversification", fmt: (v) => `${v} pos`, good: 4, bad: 1, lowerBetter: false, hint: "real positions" },
-  correlation: { label: "Correlation / tail", fmt: (v) => Math.round(v * 100) + "%", good: 0.45, bad: 0.9, lowerBetter: true, hint: "move-together risk" },
-  funding: { label: "Funding drag", fmt: (v) => Math.round(v * 100) + "%/yr", good: 0.05, bad: 0.3, lowerBetter: true, hint: "perp bleed" },
-  drawdown: { label: "Drawdown · 30d", fmt: (v) => Math.round(Math.abs(v) * 100) + "%", good: -0.2, bad: -0.5, lowerBetter: false, hint: "from peak" },
+  leverage: { label: "Leverage", fmt: (v) => v.toFixed(1) + "×", good: 2, bad: 5, lowerBetter: true, hint: "how much borrowed risk" },
+  concentration: { label: "Biggest position", fmt: (v) => Math.round(v * 100) + "%", good: 0.25, bad: 0.6, lowerBetter: true, hint: "how much sits in one coin" },
+  buffer: { label: "Cash buffer", fmt: (v) => Math.round(v * 100) + "%", good: 0.1, bad: 0, lowerBetter: false, hint: "spare cash for dips & shocks" },
+  diversification: { label: "Spread", fmt: (v) => `${v}`, good: 4, bad: 1, lowerBetter: false, hint: "how many separate bets" },
+  correlation: { label: "Move-together risk", fmt: (v) => Math.round(v * 100) + "%", good: 0.45, bad: 0.9, lowerBetter: true, hint: "do holdings all rise & fall as one" },
+  funding: { label: "Leverage cost", fmt: (v) => Math.round(v * 100) + "%/yr", good: 0.05, bad: 0.3, lowerBetter: true, hint: "yearly bleed on borrowed bets" },
+  drawdown: { label: "Drop from peak", fmt: (v) => Math.round(Math.abs(v) * 100) + "%", good: -0.2, bad: -0.5, lowerBetter: false, hint: "down from 30-day high" },
 };
 function health(key: VitalKey, v: number): number {
   const m = VITAL_META[key];
@@ -30,6 +30,10 @@ const KIND_COLOR: Record<Holding["kind"], string> = {
   "tokenized-stock": "#b98bff",
   perp: "#f2b03d",
 };
+
+function Dot({ c }: { c: string }) {
+  return <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: c }} />;
+}
 
 // ── API ──────────────────────────────────────────────────────────────────────
 async function post<T>(url: string, body: unknown): Promise<T> {
@@ -265,12 +269,32 @@ function Segmented({ value, onChange, options }: { value: string; onChange: (v: 
 }
 
 function EmptyState() {
+  const steps = [
+    { n: "1", t: "See your risk", d: "We give your crypto portfolio a health grade, A+ down to D, like a check-up." },
+    { n: "2", t: "Agents fix it", d: "With your yes, AI helper agents rebalance the risky parts and get paid automatically, on X Layer." },
+    { n: "3", t: "You stay in charge", d: "Set limits, approve the plan, or hit the kill switch. Nothing moves without you." },
+  ];
   return (
-    <div className="mt-8 rounded-lg border border-deck-600 bg-deck-800 p-10 text-center shadow-panel">
-      <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full border border-deck-600 text-2xl text-signal-scan">◉</div>
-      <h2 className="text-lg font-semibold text-ink-100">Run a diagnosis</h2>
-      <p className="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-ink-300">
-        Pick a book and hit <span className="text-ink-100">Get a second opinion</span>. The desk grades your risk across seven vitals, then drafts a plan of specialist agents to fix what it finds. Nothing moves until you approve.
+    <div className="mt-6 rounded-lg border border-deck-600 bg-deck-800 p-8 shadow-panel">
+      <div className="max-w-2xl">
+        <h2 className="text-[17px] font-semibold text-ink-100">A risk desk that does not just warn you. It fixes it.</h2>
+        <p className="mt-2 text-[13px] leading-relaxed text-ink-300">
+          Most tools tell you your portfolio is risky and stop there. This one grades the risk, then hires small
+          AI specialist agents to actually clean it up, while you hold the controls the whole time.
+        </p>
+      </div>
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {steps.map((s) => (
+          <div key={s.n} className="rounded-lg border border-deck-600 bg-deck-900 p-4">
+            <div className="grid h-6 w-6 place-items-center rounded-full border border-signal-scan/40 font-mono text-[12px] text-signal-scan">{s.n}</div>
+            <h3 className="mt-2.5 text-[13px] font-semibold text-ink-100">{s.t}</h3>
+            <p className="mt-1 text-[12px] leading-relaxed text-ink-500">{s.d}</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-6 text-[13px] text-ink-300">
+        Try it now: keep <span className="text-ink-100">Demo · at-risk book</span> selected and press
+        <span className="text-signal-scan"> Get a second opinion</span> up top.
       </p>
     </div>
   );
@@ -286,10 +310,13 @@ function GradePanel({ state }: { state: DeskState }) {
   return (
     <Panel>
       <div className="flex items-start gap-5">
-        <GradeDial grade={g.grade} score={g.score} tone={tone} />
+        <div className="flex flex-col items-center gap-1.5">
+          <GradeDial grade={g.grade} score={g.score} tone={tone} />
+          <span className="text-[10px] text-ink-500">health grade · A+ safe → D risky</span>
+        </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[11px] uppercase tracking-widest text-ink-500">Diagnosis</span>
+            <span className="font-mono text-[11px] uppercase tracking-widest text-ink-500">What we found</span>
             {improved && (
               <span className="rounded bg-signal-ok/10 px-2 py-0.5 font-mono text-[11px] text-signal-ok">
                 {before!.grade} → {g.grade}
@@ -351,8 +378,15 @@ function VitalsPanel({ state }: { state: DeskState }) {
   if (!g || !m) return null;
   return (
     <Panel>
-      <PanelTitle>Seven vitals</PanelTitle>
-      <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
+      <div className="flex items-baseline justify-between">
+        <PanelTitle>Health checks</PanelTitle>
+        <span className="flex items-center gap-2.5 text-[10px] text-ink-500">
+          <span className="flex items-center gap-1"><Dot c={TONE_HEX.ok} />healthy</span>
+          <span className="flex items-center gap-1"><Dot c={TONE_HEX.warn} />watch</span>
+          <span className="flex items-center gap-1"><Dot c={TONE_HEX.crit} />danger</span>
+        </span>
+      </div>
+      <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-3.5 sm:grid-cols-2">
         {g.vitals.map((v) => {
           const key = v.key as VitalKey;
           const meta = VITAL_META[key];
@@ -362,7 +396,7 @@ function VitalsPanel({ state }: { state: DeskState }) {
           return (
             <div key={v.key}>
               <div className="flex items-baseline justify-between">
-                <span className="text-[12px] text-ink-300">{meta.label}</span>
+                <span className="text-[12px] text-ink-100">{meta.label}</span>
                 <span className="tnum font-mono text-[12px]" style={{ color: TONE_HEX[v.severity] }}>
                   {meta.fmt(val)}
                 </span>
@@ -373,6 +407,7 @@ function VitalsPanel({ state }: { state: DeskState }) {
                   style={{ width: `${Math.round(h * 100)}%`, background: TONE_HEX[v.severity], transition: "width 0.7s ease, background 0.4s ease" }}
                 />
               </div>
+              <p className="mt-1 text-[10.5px] text-ink-500">{meta.hint}</p>
             </div>
           );
         })}
@@ -526,7 +561,10 @@ function PlanPanel({ state }: { state: DeskState }) {
   if (all.length === 0) return null;
   return (
     <Panel>
-      <PanelTitle>Agent plan</PanelTitle>
+      <PanelTitle>The fix team</PanelTitle>
+      <p className="mt-1 text-[11px] leading-relaxed text-ink-500">
+        Specialist AI agents the desk hires and pays automatically (a few cents each) to make one fix apiece on X Layer.
+      </p>
       <div className="mt-3 space-y-2">
         {all.map((j) => (
           <JobCard key={j.id} job={j} />
@@ -563,8 +601,8 @@ function JobCard({ job }: { job: Job }) {
       </div>
       <p className="mt-1.5 text-[12px] text-ink-300">{job.action}</p>
       <div className="mt-1.5 flex items-center gap-3 font-mono text-[10px] text-ink-500">
-        <span>fee {usd(job.feeUSDC)} · x402</span>
-        {job.estValueUSDC > 0 && <span>size {usd(job.estValueUSDC, { compact: true })}</span>}
+        <span title="Paid agent-to-agent via the x402 machine-payment standard">pay {usd(job.feeUSDC)}</span>
+        {job.estValueUSDC > 0 && <span title="Value of the trade this agent makes">moves {usd(job.estValueUSDC, { compact: true })}</span>}
       </div>
     </div>
   );
