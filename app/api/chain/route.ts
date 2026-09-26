@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { chainStatus, liveReady, addressExplorerUrl } from "@/lib/chain";
+import { chainStatus, liveReady, addressExplorerUrl, agentAccount } from "@/lib/chain";
 import { SPECIALISTS, COORDINATOR } from "@/lib/agents";
 
 export const runtime = "nodejs";
@@ -21,5 +21,14 @@ export async function GET() {
       explorer: addressExplorerUrl(s.address),
     })),
   ];
-  return NextResponse.json({ ok: true, status, live: liveReady(), identities });
+  // Safe diagnostics: booleans + the public agent address only. Never the key.
+  const acct = agentAccount();
+  const diag = {
+    liveExecutionEnv: process.env.LIVE_EXECUTION === "true",
+    liveExecutionRaw: (process.env.LIVE_EXECUTION ?? "(unset)").slice(0, 8),
+    hasAgentKey: Boolean(process.env.AGENT_PRIVATE_KEY),
+    agentKeyValid: acct !== null,
+    agentAddress: acct?.address ?? null,
+  };
+  return NextResponse.json({ ok: true, status, live: liveReady(), diag, identities });
 }
