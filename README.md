@@ -58,15 +58,21 @@ and the test suite in [`lib/vitals.test.ts`](lib/vitals.test.ts) (`npm run test:
 
 ## What is real, said honestly
 
-We never dress up simulation as reality. Every step in the audit trail is tagged.
+The deployed desk runs live and on-chain. Every step in the audit trail is tagged.
 
-- **Real today:** live X Layer connection (the header shows the current block), the
-  deterministic grading engine, the specialist agents' real on-chain identities
-  (they link to their addresses on OKLink), the fully hosted always-on architecture,
-  and all the human-oversight controls.
-- **Simulated, and labelled:** the agent hire / pay / execute steps run in a faithful
-  simulation flagged `sim`. They become real X Layer transactions the moment a funded
-  agent wallet and `LIVE_EXECUTION=true` are set. Nothing else changes.
+- **Real today:** live X Layer mainnet connection (the header shows the current
+  block), the deterministic grading engine, the specialist agents' real on-chain
+  identities (they link to OKLink), the fully hosted always-on architecture, and all
+  the human-oversight controls.
+- **Real on-chain settlement:** each pay and execute step is a real X Layer
+  transaction, signed from the agent's own funded wallet, verifiable on OKLink. A
+  step is tagged `on-chain` only if its transaction actually landed; a step that
+  cannot land is honestly marked `sim`, never faked.
+  ([example tx](https://www.oklink.com/xlayer/tx/0x71640b26da1c71151319f3e8ab4296f4a4f1de082e4a29c4ca8972d9d37d54da) ·
+  [agent wallet](https://www.oklink.com/xlayer/address/0x68A147Cd7F2efFB2b8522E4470B9C7dfF17ece80))
+
+> Running the code locally with no wallet configured falls back to a clearly
+> labelled simulation, so anyone can try it. The deployed instance is live on-chain.
 
 ## The one design rule: no PC required
 

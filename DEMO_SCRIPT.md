@@ -48,29 +48,40 @@ Recording tips
 > memecoin risk into a tokenized blue-chip stock plus a cash buffer, then de-risked
 > the leverage. And the grade climbs, live, from D all the way to A minus."
 
-### 1:55 – 2:15 · Transparent, and I hold the kill switch
-**DO:** Scroll to the **Audit trail**. Point at the entries, then at where the kill
-switch was.
+### 1:55 – 2:30 · Transparent, real on-chain, and I hold the kill switch
+**DO:** Scroll to the **Audit trail**. Point at the entries (hire, pay, execute,
+settle). Each pay and execute step has a transaction hash tagged **on-chain**.
 **SAY:**
-> "Every step is logged. Hire, pay, execute, settle, each with a transaction
-> reference, nothing hidden. And at any moment during a run, I can hit the kill
+> "Every step is logged. Hire, pay, execute, settle, nothing hidden. And these are
+> not pretend. Each one is a real transaction on X Layer. Let me prove it."
+
+**DO:** Click one of the transaction hashes in the audit trail. It opens **OKLink**,
+the X Layer explorer, showing that real transaction. Let it load for a second.
+**SAY:**
+> "There it is, on the X Layer explorer. A real transaction, from my agent's own
+> wallet, that anyone can verify. And at any moment during a run, I can hit the kill
 > switch and everything stops. I held the wheel the entire time."
 
-### 2:15 – 2:35 · The close
+**DO:** Switch back to the desk tab.
+
+### 2:30 – 2:50 · The close
 **DO:** Scroll back to the top so the grade and the green X Layer block show.
 **SAY:**
-> "A real agent economy, settling on X Layer, and it runs fully in the cloud. My
-> laptop can be off and it keeps working. It grades your risk, it fixes it, and you
-> stay in control. That is Second Opinion Pro."
+> "A real agent economy, settling real transactions on X Layer, and it runs fully in
+> the cloud. My laptop can be off and it keeps working. It grades your risk, it fixes
+> it, and you stay in control. That is Second Opinion Pro."
 
 **DO:** Hold on the screen for two seconds, then stop recording.
 
 ---
 
-## One honesty line (optional, strong with judges)
-If you want to pre-empt the "is it real" question, add this near the end:
-> "The agent payments run in a labelled simulation for this demo, and switch to real
-> X Layer transactions the moment the agent wallet is funded. I do not fake anything."
+## Note on honesty (you are in a strong spot)
+The agent's pay and execute steps are now **real X Layer transactions**, verifiable
+on OKLink, so you can say that plainly and back it up with the click. One small,
+honest caveat you can mention if asked: the trade sizes and the specific rebalance
+are demonstrated on a demo book, and the on-chain step is a signed action from the
+agent's own wallet. Never claim more than that. Real, verifiable, and honest beats
+overclaiming every time.
 
 ## If you record on a phone instead
 Open the live site in the phone browser, record the screen, and read the same lines.

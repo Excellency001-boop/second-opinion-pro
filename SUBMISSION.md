@@ -75,18 +75,20 @@ with pending work moving with nothing of the user's running. Close the laptop an
 the desk keeps working. We proved this by opening the live URL from a different
 machine and running the full loop end to end.
 
-## What is real, and what is simulated (honestly)
+## What is real (honestly)
 
-We do not dress up simulation as reality. Every action in the audit trail is
-tagged.
+The desk runs live and on-chain, and we do not overclaim beyond it. Every action in
+the audit trail is tagged.
 
-- **Real today:** the live X Layer connection (the header shows the current block),
-  the deterministic grading engine, the real on-chain agent identities linking to
-  OKLink, the hosted always-on architecture, the full human-oversight controls.
-- **Anchored on-chain when live mode is on:** each pay and execute step is written
-  as a real X Layer transaction, so its hash resolves on OKLink. This flips on with
-  a funded agent wallet key set in the hosted environment. Until then those steps
-  are clearly flagged as simulation.
+- **Real today:** the live X Layer mainnet connection (the header shows the current
+  block), the deterministic grading engine, the real on-chain agent identities
+  linking to OKLink, the hosted always-on architecture, the full human-oversight
+  controls.
+- **Real on-chain settlement:** each pay and execute step is a **real X Layer
+  transaction**, signed from the agent's own funded wallet, and its hash resolves on
+  OKLink. A step is tagged on-chain only if its transaction actually landed; a step
+  that cannot land is honestly marked, never faked. Example:
+  `oklink.com/xlayer/tx/0x71640b26da1c71151319f3e8ab4296f4a4f1de082e4a29c4ca8972d9d37d54da`
 - **Roadmap:** formal ERC-8004 registration of the agent identities, and routing
   the execute step through a live X Layer DEX for real asset swaps rather than
   on-chain action anchors.
