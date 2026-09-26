@@ -96,7 +96,7 @@ export async function chainStatus(): Promise<{ ok: boolean; chainId: number; blo
 // the key lives as a Vercel env var on the hosted backend. Handling any private
 // key stays server-side; it is never returned to the client.
 export function agentAccount() {
-  const pk = process.env.AGENT_PRIVATE_KEY;
+  const pk = process.env.AGENT_PRIVATE_KEY?.trim();
   if (!pk) return null;
   const key = (pk.startsWith("0x") ? pk : `0x${pk}`) as `0x${string}`;
   try {
@@ -110,25 +110,36 @@ export function liveReady(): boolean {
   return LIVE_EXECUTION && agentAccount() !== null;
 }
 
-// Anchor one agent action on X Layer as a real, verifiable transaction. This is
-// the honest minimum: a 0-value tx from the agent wallet to itself carrying the
-// action label in calldata, so every step in the audit trail has a real tx hash
-// an OKLink viewer can open. Returns null when not in live mode (caller then uses
-// a clearly-flagged simulation reference instead).
+// Local nonce cursor so rapid back-to-back anchors do not collide. The RPC's
+// "pending" count can lag behind transactions we just broadcast, which is what
+// caused some anchors to fail and fall back to sim. We take the max of the chain's
+// pending nonce and our own last-used-plus-one, and reset on any failure.
+let nonceCursor: number | null = null;
+
+// Anchor one agent action on X Layer as a real, verifiable transaction: a 0-value
+// tx from the agent wallet to itself carrying the action label in calldata, so the
+// audit step has a real tx hash an OKLink viewer can open. Returns the hash on
+// success, or null (not live, or a chain hiccup) so the caller can fall back to a
+// clearly-flagged simulation reference AND label that step as sim, never as on-chain.
 export async function anchorAction(label: string): Promise<string | null> {
   if (!liveReady()) return null;
   const account = agentAccount();
   if (!account) return null;
   try {
+    const pub = publicClient();
+    const chainNonce = await pub.getTransactionCount({ address: account.address, blockTag: "pending" });
+    const nonce = nonceCursor !== null && nonceCursor + 1 > chainNonce ? nonceCursor + 1 : chainNonce;
     const wallet = createWalletClient({ account, chain: xlayer, transport: http(XLAYER.rpcUrl) });
     const hash = await wallet.sendTransaction({
       to: account.address,
       value: 0n,
       data: toHex(label.slice(0, 220)),
+      nonce,
     });
+    nonceCursor = nonce;
     return hash;
   } catch {
-    // Never break a run over a chain hiccup — fall back to a flagged sim reference.
+    nonceCursor = null; // re-sync from chain on the next attempt
     return null;
   }
 }

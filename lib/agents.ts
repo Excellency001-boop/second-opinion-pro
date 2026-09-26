@@ -119,18 +119,21 @@ export async function settleJob(job: Job, portfolio: Portfolio): Promise<{ entri
   push("hire", `Hired ${job.specialist.name} (${job.specialist.id}) over A2A — rated ${job.specialist.rating}★, ${job.specialist.jobsDone} jobs done`, {
     actor: "coordinator",
   });
-  // 2. PAY over x402 — anchored on X Layer when live
-  const payHash = (await anchorAction(`x402 pay ${job.specialist.id} ${job.feeUSDC}USDC`)) || ref("pay", job.id);
+  // 2. PAY over x402 — anchored on X Layer when live. A step is only labelled
+  // on-chain if its transaction actually landed; otherwise it is honestly `sim`.
+  const payReal = await anchorAction(`x402 pay ${job.specialist.id} ${job.feeUSDC}USDC`);
   push("pay", `Paid ${job.specialist.name} ${job.feeUSDC} USDC via x402`, {
     amountUSDC: job.feeUSDC,
-    txHash: payHash,
+    txHash: payReal || ref("pay", job.id),
+    live: payReal !== null,
   });
   // 3. EXECUTE on X Layer — anchored on X Layer when live
-  const execHash = (await anchorAction(`exec ${job.specialist.id} ${job.action}`)) || ref("exec", job.id);
+  const execReal = await anchorAction(`exec ${job.specialist.id} ${job.action}`);
   push("execute", `${job.specialist.name}: ${job.action} — ${fmtUSD(job.estValueUSDC)} on X Layer`, {
     actor: job.specialist.id,
     amountUSDC: job.estValueUSDC,
-    txHash: execHash,
+    txHash: execReal || ref("exec", job.id),
+    live: execReal !== null,
   });
   // 4. SETTLE
   const next = applyFix(job, portfolio);
