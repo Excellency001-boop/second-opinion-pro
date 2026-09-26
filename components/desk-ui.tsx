@@ -128,11 +128,19 @@ export default function Desk() {
         <Header state={state} chain={chain} />
         <Controls
           mode={mode}
-          setMode={setMode}
+          setMode={(m) => {
+            setMode(m);
+            setState(null); // drop stale results so a switched book never shows old data
+            setError(null);
+          }}
           address={address}
           setAddress={setAddress}
           profile={profile}
-          setProfile={setProfile}
+          setProfile={(p) => {
+            setProfile(p);
+            setState(null);
+            setError(null);
+          }}
           onScan={scan}
           busy={busy}
           hasState={!!state}
@@ -532,7 +540,24 @@ function OversightPanel({
 
 function GuardSlider({ label, value, min, max, step, fmt, onCommit, disabled }: { label: string; value: number; min: number; max: number; step: number; fmt: (v: number) => string; onCommit: (v: number) => void; disabled?: boolean }) {
   const [local, setLocal] = useState(value);
-  useEffect(() => setLocal(value), [value]);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Keep in sync when the committed value changes elsewhere, but never fight an
+  // in-flight drag (a pending debounce means the user is still dragging).
+  useEffect(() => {
+    if (!timer.current) setLocal(value);
+  }, [value]);
+  // Commit on every change, debounced. This fires no matter where the pointer is
+  // released (onMouseUp only fires if you release on the thumb, which is the bug
+  // QA hit). The display updates instantly; the value commits ~250ms after the
+  // last move.
+  const change = (v: number) => {
+    setLocal(v);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      onCommit(v);
+    }, 250);
+  };
   return (
     <div>
       <div className="flex items-baseline justify-between">
@@ -546,9 +571,7 @@ function GuardSlider({ label, value, min, max, step, fmt, onCommit, disabled }: 
         step={step}
         value={local}
         disabled={disabled}
-        onChange={(e) => setLocal(Number(e.target.value))}
-        onMouseUp={() => onCommit(local)}
-        onTouchEnd={() => onCommit(local)}
+        onChange={(e) => change(Number(e.target.value))}
         className="mt-1 w-full accent-signal-scan disabled:opacity-40"
       />
     </div>
